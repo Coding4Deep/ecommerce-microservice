@@ -79,6 +79,7 @@ func main() {
 	{
 		public.POST("/auth/login", adminHandler.Login)
 		public.POST("/auth/register", adminHandler.Register) // Requires special token
+		public.GET("/products", productHandler.ListProducts) // Public product listing
 	}
 
 	// Protected routes (require admin authentication)
@@ -102,7 +103,7 @@ func main() {
 		protected.POST("/users/:id/deactivate", userHandler.DeactivateUser)
 
 		// Product management
-		protected.GET("/products", productHandler.ListProducts)
+		protected.GET("/products/admin", productHandler.ListProducts) // Admin-only product listing
 		protected.GET("/products/:id", productHandler.GetProduct)
 		protected.POST("/products", productHandler.CreateProduct)
 		protected.PUT("/products/:id", productHandler.UpdateProduct)

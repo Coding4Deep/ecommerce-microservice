@@ -17,6 +17,7 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Services from './pages/Services';
+import UserDashboard from './pages/UserDashboard';
 import NotFound from './pages/NotFound';
 
 // Admin Pages
@@ -24,6 +25,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminProducts from './pages/AdminProducts';
+import AdminServices from './pages/AdminServices';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 // Context for global state
@@ -72,11 +74,23 @@ function App() {
                     </Layout>
                   </AdminProtectedRoute>
                 } />
+                <Route path="/admin/services" element={
+                  <AdminProtectedRoute>
+                    <Layout className="admin">
+                      <AdminServices />
+                    </Layout>
+                  </AdminProtectedRoute>
+                } />
                 
                 {/* Regular Routes */}
                 <Route path="/" element={
                   <Layout>
                     <Home />
+                  </Layout>
+                } />
+                <Route path="/dashboard" element={
+                  <Layout>
+                    <UserDashboard />
                   </Layout>
                 } />
                 <Route path="/products" element={

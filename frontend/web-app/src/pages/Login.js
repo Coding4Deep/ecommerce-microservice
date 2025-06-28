@@ -41,7 +41,7 @@ function Login() {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      navigate('/');
+      navigate('/dashboard'); // Redirect to user dashboard instead of home
     } else {
       setError(result.error);
     }

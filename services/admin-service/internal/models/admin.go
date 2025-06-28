@@ -104,7 +104,7 @@ func GetDefaultPermissions(role string) []string {
 		}
 	case "admin":
 		return []string{
-			"user.read", "user.update",
+			"user.create", "user.read", "user.update", "user.delete",
 			"product.create", "product.read", "product.update", "product.delete",
 			"order.read", "order.update",
 			"analytics.read",

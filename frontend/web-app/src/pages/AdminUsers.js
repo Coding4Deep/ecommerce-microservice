@@ -32,8 +32,8 @@ const AdminUsers = () => {
         throw new Error('No admin token found');
       }
 
-      // Get users from admin service
-      const response = await axios.get('/admin-api/users', {
+      // Use direct admin service endpoint
+      const response = await axios.get('http://localhost:8009/api/v1/users', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -159,27 +159,70 @@ const AdminUsers = () => {
   };
 
   const handleDeleteUser = async (userId, userEmail) => {
-    if (window.confirm(`Are you sure you want to delete user: ${userEmail}?`)) {
+    if (window.confirm(`Are you sure you want to delete user: ${userEmail}? This action cannot be undone.`)) {
       try {
         const token = localStorage.getItem('adminToken');
         if (!token) {
           throw new Error('No admin token found');
         }
 
-        await axios.delete(`/admin-api/users/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+        // Try multiple endpoints for deletion
+        let deleteSuccess = false;
+        let errorMessage = '';
+
+        try {
+          // First try the admin-api endpoint
+          await axios.delete(`/admin-api/users/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          deleteSuccess = true;
+        } catch (adminApiError) {
+          console.log('Admin API delete failed, trying direct admin service...');
+          try {
+            // Try direct admin service endpoint
+            const response = await axios.delete(`http://localhost:8009/api/v1/users/${userId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            if (response.data && response.data.success) {
+              deleteSuccess = true;
+            } else {
+              errorMessage = response.data?.message || 'Delete failed';
+            }
+          } catch (directError) {
+            errorMessage = directError.response?.data?.message || directError.message;
           }
-        });
-        
-        await fetchUsers(); // Refresh the list
-        alert('User deleted successfully!');
+        }
+
+        if (deleteSuccess) {
+          // Remove user from local state immediately for better UX
+          setUsers(prevUsers => prevUsers.filter(user => user.id !== userId && user._id !== userId));
+          
+          alert('User deleted successfully!');
+          
+          // Refresh the list after a short delay to ensure consistency
+          setTimeout(() => {
+            fetchUsers();
+          }, 1000);
+        } else {
+          throw new Error(errorMessage || 'Failed to delete user');
+        }
+
       } catch (error) {
         console.error('Error deleting user:', error);
         if (error.response?.status === 401) {
           localStorage.removeItem('adminToken');
           navigate('/admin/login');
+        } else if (error.response?.status === 403) {
+          alert('You do not have permission to delete users. Please contact a super admin.');
+        } else if (error.response?.status === 404) {
+          alert('User not found. They may have already been deleted.');
+          fetchUsers(); // Refresh to sync state
         } else {
           alert('Error deleting user: ' + (error.response?.data?.message || error.message));
         }
