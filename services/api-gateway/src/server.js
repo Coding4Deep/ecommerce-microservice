@@ -28,710 +28,114 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
+    service: 'API Gateway',
+    version: '1.0.0'
   });
 });
 
-// Simple API routes for testing
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API Gateway is working!', timestamp: new Date().toISOString() });
+// Service URLs
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user-service:8000';
+const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://product-service:8080';
+const CART_SERVICE_URL = process.env.CART_SERVICE_URL || 'http://cart-service:8000';
+
+// Products endpoint
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = [
+      {
+        id: '1',
+        name: 'iPhone 15 Pro Max',
+        description: 'Latest iPhone with advanced features',
+        price: 1199.99,
+        category: 'Electronics',
+        image: 'https://via.placeholder.com/300x300?text=iPhone+15+Pro+Max',
+        stock: 50,
+        brand: 'Apple'
+      },
+      {
+        id: '2',
+        name: 'Samsung Galaxy S24 Ultra',
+        description: 'Premium Android smartphone',
+        price: 1099.99,
+        category: 'Electronics',
+        image: 'https://via.placeholder.com/300x300?text=Galaxy+S24+Ultra',
+        stock: 30,
+        brand: 'Samsung'
+      },
+      {
+        id: '3',
+        name: 'MacBook Pro 16"',
+        description: 'Professional laptop for developers',
+        price: 2499.99,
+        category: 'Electronics',
+        image: 'https://via.placeholder.com/300x300?text=MacBook+Pro+16',
+        stock: 15,
+        brand: 'Apple'
+      },
+      {
+        id: '4',
+        name: 'Sony WH-1000XM5',
+        description: 'Noise-canceling wireless headphones',
+        price: 399.99,
+        category: 'Electronics',
+        image: 'https://via.placeholder.com/300x300?text=Sony+WH-1000XM5',
+        stock: 25,
+        brand: 'Sony'
+      },
+      {
+        id: '5',
+        name: 'Nike Air Max 270',
+        description: 'Comfortable running shoes',
+        price: 149.99,
+        category: 'Footwear',
+        image: 'https://via.placeholder.com/300x300?text=Nike+Air+Max+270',
+        stock: 40,
+        brand: 'Nike'
+      }
+    ];
+    
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
 });
 
-// Expanded products endpoint with real data
-app.get('/api/products', (req, res) => {
-  const products = [
-    // Electronics - Smartphones
-    {
-      id: '1',
-      name: 'iPhone 15 Pro Max',
-      price: 1199.00,
-      description: 'The most advanced iPhone ever with titanium design, A17 Pro chip, and professional camera system.',
-      image: '/images/products/iphone-15-pro-max.jpg',
-      category: 'Electronics',
-      subcategory: 'Smartphones',
-      brand: 'Apple',
-      inStock: true,
-      stockCount: 25,
-      rating: 4.8,
-      reviews: 1247
-    },
-    {
-      id: '2',
-      name: 'Samsung Galaxy S24 Ultra',
-      price: 1299.00,
-      description: 'Premium Android smartphone with S Pen, 200MP camera, and AI-powered features.',
-      image: '/images/products/galaxy-s24-ultra.jpg',
-      category: 'Electronics',
-      subcategory: 'Smartphones',
-      brand: 'Samsung',
-      inStock: true,
-      stockCount: 18,
-      rating: 4.7,
-      reviews: 892
-    },
-    {
-      id: '3',
-      name: 'Google Pixel 8 Pro',
-      price: 999.00,
-      description: 'Google\'s flagship phone with advanced AI photography and pure Android experience.',
-      image: '/images/products/pixel-8-pro.jpg',
-      category: 'Electronics',
-      subcategory: 'Smartphones',
-      brand: 'Google',
-      inStock: true,
-      stockCount: 12,
-      rating: 4.6,
-      reviews: 634
-    },
-    
-    // Electronics - Laptops
-    {
-      id: '4',
-      name: 'MacBook Pro 16-inch M3 Max',
-      price: 2499.00,
-      description: 'Professional laptop with M3 Max chip, 18-hour battery life, and stunning Liquid Retina XDR display.',
-      image: '/images/products/macbook-pro-16.jpg',
-      category: 'Electronics',
-      subcategory: 'Laptops',
-      brand: 'Apple',
-      inStock: true,
-      stockCount: 8,
-      rating: 4.9,
-      reviews: 456
-    },
-    {
-      id: '5',
-      name: 'Dell XPS 13 Plus',
-      price: 1299.00,
-      description: 'Ultra-portable laptop with 13.4" InfinityEdge display and 12th Gen Intel processors.',
-      image: '/images/products/dell-xps-13.jpg',
-      category: 'Electronics',
-      subcategory: 'Laptops',
-      brand: 'Dell',
-      inStock: true,
-      stockCount: 15,
-      rating: 4.5,
-      reviews: 723
-    },
-    {
-      id: '6',
-      name: 'ASUS ROG Zephyrus G14',
-      price: 1599.00,
-      description: 'Gaming laptop with AMD Ryzen 9 processor, RTX 4060 graphics, and AniMe Matrix display.',
-      image: '/images/products/asus-rog-g14.jpg',
-      category: 'Electronics',
-      subcategory: 'Laptops',
-      brand: 'ASUS',
-      inStock: true,
-      stockCount: 6,
-      rating: 4.7,
-      reviews: 389
-    },
-    
-    // Electronics - Audio
-    {
-      id: '7',
-      name: 'Sony WH-1000XM5',
-      price: 399.00,
-      description: 'Industry-leading noise canceling wireless headphones with 30-hour battery life.',
-      image: '/images/products/sony-wh1000xm5.jpg',
-      category: 'Electronics',
-      subcategory: 'Audio',
-      brand: 'Sony',
-      inStock: true,
-      stockCount: 32,
-      rating: 4.8,
-      reviews: 2156
-    },
-    {
-      id: '8',
-      name: 'Apple AirPods Pro (2nd Gen)',
-      price: 249.00,
-      description: 'Wireless earbuds with active noise cancellation and spatial audio.',
-      image: '/images/products/airpods-pro-2.jpg',
-      category: 'Electronics',
-      subcategory: 'Audio',
-      brand: 'Apple',
-      inStock: true,
-      stockCount: 45,
-      rating: 4.6,
-      reviews: 3421
-    },
-    
-    // Fashion - Clothing
-    {
-      id: '9',
-      name: 'Nike Air Force 1 \'07',
-      price: 110.00,
-      description: 'Classic basketball shoe with leather upper and Air-Sole unit for cushioning.',
-      image: '/images/products/nike-air-force-1.jpg',
-      category: 'Fashion',
-      subcategory: 'Shoes',
-      brand: 'Nike',
-      inStock: true,
-      stockCount: 28,
-      rating: 4.7,
-      reviews: 1876
-    },
-    {
-      id: '10',
-      name: 'Adidas Ultraboost 22',
-      price: 190.00,
-      description: 'Running shoes with responsive BOOST midsole and Primeknit upper.',
-      image: '/images/products/adidas-ultraboost-22.jpg',
-      category: 'Fashion',
-      subcategory: 'Shoes',
-      brand: 'Adidas',
-      inStock: true,
-      stockCount: 22,
-      rating: 4.5,
-      reviews: 967
-    },
-    {
-      id: '11',
-      name: 'Levi\'s 501 Original Jeans',
-      price: 89.50,
-      description: 'The original blue jean with a straight fit and button fly.',
-      image: '/images/products/levis-501.jpg',
-      category: 'Fashion',
-      subcategory: 'Clothing',
-      brand: 'Levi\'s',
-      inStock: true,
-      stockCount: 35,
-      rating: 4.4,
-      reviews: 2341
-    },
-    {
-      id: '12',
-      name: 'Champion Reverse Weave Hoodie',
-      price: 65.00,
-      description: 'Classic pullover hoodie with reverse weave construction to resist shrinkage.',
-      image: '/images/products/champion-hoodie.jpg',
-      category: 'Fashion',
-      subcategory: 'Clothing',
-      brand: 'Champion',
-      inStock: true,
-      stockCount: 41,
-      rating: 4.6,
-      reviews: 1523
-    },
-    
-    // Home & Garden
-    {
-      id: '13',
-      name: 'Dyson V15 Detect',
-      price: 749.00,
-      description: 'Cordless vacuum with laser dust detection and powerful suction.',
-      image: '/images/products/dyson-v15.jpg',
-      category: 'Home & Garden',
-      subcategory: 'Appliances',
-      brand: 'Dyson',
-      inStock: true,
-      stockCount: 14,
-      rating: 4.7,
-      reviews: 856
-    },
-    {
-      id: '14',
-      name: 'Instant Pot Duo 7-in-1',
-      price: 99.95,
-      description: 'Multi-use pressure cooker that replaces 7 kitchen appliances.',
-      image: '/images/products/instant-pot-duo.jpg',
-      category: 'Home & Garden',
-      subcategory: 'Kitchen',
-      brand: 'Instant Pot',
-      inStock: true,
-      stockCount: 27,
-      rating: 4.8,
-      reviews: 4567
-    },
-    
-    // Books
-    {
-      id: '15',
-      name: 'The Psychology of Money',
-      price: 16.99,
-      description: 'Timeless lessons on wealth, greed, and happiness by Morgan Housel.',
-      image: '/images/products/psychology-of-money.jpg',
-      category: 'Books',
-      subcategory: 'Business & Finance',
-      brand: 'Harriman House',
-      inStock: true,
-      stockCount: 67,
-      rating: 4.9,
-      reviews: 12456
-    },
-    {
-      id: '16',
-      name: 'Atomic Habits',
-      price: 18.00,
-      description: 'An easy & proven way to build good habits & break bad ones by James Clear.',
-      image: '/images/products/atomic-habits.jpg',
-      category: 'Books',
-      subcategory: 'Self-Help',
-      brand: 'Avery',
-      inStock: true,
-      stockCount: 89,
-      rating: 4.8,
-      reviews: 23789
-    },
-    
-    // Sports & Outdoors
-    {
-      id: '17',
-      name: 'Hydro Flask Water Bottle 32oz',
-      price: 44.95,
-      description: 'Insulated stainless steel water bottle that keeps drinks cold for 24 hours.',
-      image: '/images/products/hydro-flask-32oz.jpg',
-      category: 'Sports & Outdoors',
-      subcategory: 'Water Bottles',
-      brand: 'Hydro Flask',
-      inStock: true,
-      stockCount: 156,
-      rating: 4.7,
-      reviews: 3456
-    },
-    {
-      id: '18',
-      name: 'Yeti Rambler Tumbler 20oz',
-      price: 35.00,
-      description: 'Double-wall vacuum insulated tumbler with MagSlider lid.',
-      image: '/images/products/yeti-rambler-20oz.jpg',
-      category: 'Sports & Outdoors',
-      subcategory: 'Drinkware',
-      brand: 'YETI',
-      inStock: true,
-      stockCount: 78,
-      rating: 4.8,
-      reviews: 2134
-    },
-    
-    // Gaming
-    {
-      id: '19',
-      name: 'PlayStation 5 Console',
-      price: 499.99,
-      description: 'Next-gen gaming console with ultra-high speed SSD and ray tracing.',
-      image: '/images/products/playstation-5.jpg',
-      category: 'Electronics',
-      subcategory: 'Gaming',
-      brand: 'Sony',
-      inStock: false,
-      stockCount: 0,
-      rating: 4.9,
-      reviews: 5678
-    },
-    {
-      id: '20',
-      name: 'Xbox Series X',
-      price: 499.99,
-      description: 'Most powerful Xbox ever with 4K gaming and Quick Resume.',
-      image: '/images/products/xbox-series-x.jpg',
-      category: 'Electronics',
-      subcategory: 'Gaming',
-      brand: 'Microsoft',
-      inStock: true,
-      stockCount: 3,
-      rating: 4.8,
-      reviews: 4321
-    }
-  ];
-  
-  res.json({
-    products: products,
-    total: products.length,
-    page: 1,
-    limit: 50,
-    categories: ['Electronics', 'Fashion', 'Home & Garden', 'Books', 'Sports & Outdoors'],
-    brands: ['Apple', 'Samsung', 'Google', 'Dell', 'ASUS', 'Sony', 'Nike', 'Adidas', 'Levi\'s', 'Champion', 'Dyson', 'Instant Pot', 'Hydro Flask', 'YETI', 'Microsoft']
-  });
-});
-
-// Enhanced categories endpoint
+// Categories endpoint
 app.get('/api/categories', (req, res) => {
   const categories = [
-    { 
-      id: '1', 
-      name: 'Electronics', 
-      slug: 'electronics', 
-      image: '/images/categories/electronics.jpg',
-      description: 'Latest gadgets, smartphones, laptops, and tech accessories',
-      productCount: 12
-    },
-    { 
-      id: '2', 
-      name: 'Fashion', 
-      slug: 'fashion', 
-      image: '/images/categories/fashion.jpg',
-      description: 'Trendy clothing, shoes, and accessories for all styles',
-      productCount: 4
-    },
-    { 
-      id: '3', 
-      name: 'Home & Garden', 
-      slug: 'home-garden', 
-      image: '/images/categories/home-garden.jpg',
-      description: 'Everything for your home, kitchen, and garden needs',
-      productCount: 2
-    },
-    { 
-      id: '4', 
-      name: 'Books', 
-      slug: 'books', 
-      image: '/images/categories/books.jpg',
-      description: 'Best-selling books across all genres and topics',
-      productCount: 2
-    },
-    { 
-      id: '5', 
-      name: 'Sports & Outdoors', 
-      slug: 'sports-outdoors', 
-      image: '/images/categories/sports-outdoors.jpg',
-      description: 'Gear for fitness, outdoor adventures, and active lifestyle',
-      productCount: 2
-    }
+    { id: '1', name: 'Electronics', slug: 'electronics' },
+    { id: '2', name: 'Footwear', slug: 'footwear' },
+    { id: '3', name: 'Clothing', slug: 'clothing' },
+    { id: '4', name: 'Books', slug: 'books' },
+    { id: '5', name: 'Home & Garden', slug: 'home-garden' }
   ];
   
-  res.json({ categories });
+  res.json(categories);
 });
-
-// Admin authentication endpoints
-app.post('/api/admin/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  // Demo admin credentials
-  if (email === 'admin@ecommerce.com' && password === 'admin123') {
-    const adminUser = {
-      id: 'admin-1',
-      email: 'admin@ecommerce.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin',
-      permissions: ['users.read', 'users.write', 'products.read', 'products.write', 'orders.read', 'orders.write']
-    };
-    
-    res.json({
-      success: true,
-      user: adminUser,
-      token: 'admin-jwt-token-demo'
-    });
-  } 
-  // Actual admin user - Deepak
-  else if (email === 'deepak@ecommerce.com' && password === 'deepak') {
-    const deepakAdmin = {
-      id: 'admin-deepak',
-      email: 'deepak@ecommerce.com',
-      firstName: 'Deepak',
-      lastName: 'Admin',
-      role: 'admin',
-      permissions: ['users.read', 'users.write', 'products.read', 'products.write', 'orders.read', 'orders.write', 'system.admin']
-    };
-    
-    res.json({
-      success: true,
-      user: deepakAdmin,
-      token: 'admin-jwt-token-deepak'
-    });
-  } else {
-    res.status(401).json({
-      success: false,
-      error: 'Invalid admin credentials'
-    });
-  }
-});
-
-app.post('/api/admin/register', (req, res) => {
-  const { firstName, lastName, email, password, adminKey } = req.body;
-  
-  // Admin registration requires special key
-  if (adminKey !== 'ECOMMERCE_ADMIN_SECRET_2024') {
-    return res.status(403).json({
-      success: false,
-      error: 'Invalid admin registration key. Contact system administrator.'
-    });
-  }
-  
-  // Check if email already exists (in real app, check database)
-  const existingEmails = ['admin@ecommerce.com', 'deepak@ecommerce.com'];
-  if (existingEmails.includes(email.toLowerCase())) {
-    return res.status(400).json({
-      success: false,
-      error: 'Admin account with this email already exists'
-    });
-  }
-  
-  // In a real app, you'd save to database
-  const newAdmin = {
-    id: `admin-${Date.now()}`,
-    firstName,
-    lastName,
-    email,
-    role: 'admin',
-    permissions: ['users.read', 'users.write', 'products.read', 'products.write', 'orders.read', 'orders.write'],
-    createdAt: new Date().toISOString()
-  };
-  
-  res.json({
-    success: true,
-    user: newAdmin,
-    token: `admin-jwt-token-${Date.now()}`,
-    message: 'Admin account created successfully'
-  });
-});
-
-// Get admin registration key (for authorized users only)
-app.get('/api/admin/registration-key', (req, res) => {
-  // In a real app, this would require proper authentication
-  res.json({
-    key: 'ECOMMERCE_ADMIN_SECRET_2024',
-    note: 'This key is required to create new admin accounts',
-    validUntil: '2024-12-31',
-    createdBy: 'System Administrator'
-  });
-});
-
-// Admin product management endpoints
-app.post('/api/admin/products', (req, res) => {
-  const newProduct = {
-    id: `${Date.now()}`,
-    ...req.body,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
-  // In a real app, save to database
-  res.json({
-    success: true,
-    product: newProduct,
-    message: 'Product created successfully'
-  });
-});
-
-app.put('/api/admin/products/:id', (req, res) => {
-  const { id } = req.params;
-  const updatedProduct = {
-    id,
-    ...req.body,
-    updatedAt: new Date().toISOString()
-  };
-  
-  // In a real app, update in database
-  res.json({
-    success: true,
-    product: updatedProduct,
-    message: 'Product updated successfully'
-  });
-});
-
-app.delete('/api/admin/products/:id', (req, res) => {
-  const { id } = req.params;
-  
-  // In a real app, delete from database
-  res.json({
-    success: true,
-    message: `Product ${id} deleted successfully`
-  });
-});
-
-// Admin user management endpoints
-app.put('/api/admin/users/:id', (req, res) => {
-  const { id } = req.params;
-  const updatedUser = {
-    id,
-    ...req.body,
-    updatedAt: new Date().toISOString()
-  };
-  
-  // In a real app, update in database
-  res.json({
-    success: true,
-    user: updatedUser,
-    message: 'User updated successfully'
-  });
-});
-
-app.delete('/api/admin/users/:id', (req, res) => {
-  const { id } = req.params;
-  
-  // In a real app, delete from database
-  res.json({
-    success: true,
-    message: `User ${id} deleted successfully`
-  });
-});
-
-// Real-time admin stats (calculated from actual data)
-app.get('/api/admin/stats', (req, res) => {
-  // In a real app, these would be calculated from database
-  const stats = {
-    totalUsers: 5, // Actual count from users array
-    totalOrders: 3, // Actual count from orders array  
-    totalRevenue: 1847.00, // Sum of actual order totals
-    totalProducts: 20, // Actual product count
-    activeUsers: 4, // Users with status 'active'
-    pendingOrders: 1, // Orders with status 'processing'
-    lowStockProducts: 2, // Products with stock < 10
-    monthlyGrowth: 8.5,
-    recentActivity: [
-      {
-        id: 1,
-        type: 'order',
-        message: 'New order #ORD-2024-001 placed',
-        timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString()
-      },
-      {
-        id: 2,
-        type: 'user',
-        message: 'New user registration: john@example.com',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-      },
-      {
-        id: 3,
-        type: 'product',
-        message: 'Product stock updated: iPhone 15 Pro Max',
-        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString()
-      }
-    ]
-  };
-  
-  res.json(stats);
-});
-
-// Users endpoint for admin
-app.get('/api/admin/users', (req, res) => {
-  const users = [
-    {
-      id: '1',
-      firstName: 'Admin',
-      lastName: 'User',
-      email: 'admin@ecommerce.com',
-      role: 'admin',
-      status: 'active',
-      joinDate: '2024-01-15',
-      lastLogin: '2024-06-27',
-      totalOrders: 0,
-      totalSpent: 0
-    },
-    {
-      id: '2',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'user@example.com',
-      role: 'user',
-      status: 'active',
-      joinDate: '2024-03-22',
-      lastLogin: '2024-06-26',
-      totalOrders: 5,
-      totalSpent: 1247.50
-    },
-    {
-      id: '3',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      email: 'sarah.johnson@email.com',
-      role: 'user',
-      status: 'active',
-      joinDate: '2024-02-10',
-      lastLogin: '2024-06-27',
-      totalOrders: 12,
-      totalSpent: 2890.75
-    },
-    {
-      id: '4',
-      firstName: 'Michael',
-      lastName: 'Chen',
-      email: 'michael.chen@email.com',
-      role: 'user',
-      status: 'active',
-      joinDate: '2024-04-05',
-      lastLogin: '2024-06-25',
-      totalOrders: 3,
-      totalSpent: 567.25
-    },
-    {
-      id: '5',
-      firstName: 'Emily',
-      lastName: 'Davis',
-      email: 'emily.davis@email.com',
-      role: 'user',
-      status: 'inactive',
-      joinDate: '2024-01-30',
-      lastLogin: '2024-05-15',
-      totalOrders: 8,
-      totalSpent: 1834.00
-    }
-  ];
-  
-  res.json({ users, total: users.length });
-});
-
-// Orders endpoint for admin
-app.get('/api/admin/orders', (req, res) => {
-  const orders = [
-    {
-      id: 'ORD-2024-001',
-      customerName: 'John Doe',
-      customerEmail: 'user@example.com',
-      date: '2024-06-27',
-      status: 'processing',
-      total: 1199.00,
-      items: 1,
-      shippingAddress: '123 Main St, New York, NY 10001'
-    },
-    {
-      id: 'ORD-2024-002',
-      customerName: 'Sarah Johnson',
-      customerEmail: 'sarah.johnson@email.com',
-      date: '2024-06-26',
-      status: 'shipped',
-      total: 249.00,
-      items: 1,
-      shippingAddress: '456 Oak Ave, Los Angeles, CA 90210'
-    },
-    {
-      id: 'ORD-2024-003',
-      customerName: 'Michael Chen',
-      customerEmail: 'michael.chen@email.com',
-      date: '2024-06-25',
-      status: 'delivered',
-      total: 399.00,
-      items: 1,
-      shippingAddress: '789 Pine St, Chicago, IL 60601'
-    }
-  ];
-  
-  res.json({ orders, total: orders.length });
-});
-
-// User Service Proxy Routes
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user-service:8000';
-const CART_SERVICE_URL = process.env.CART_SERVICE_URL || 'http://cart-service:8003';
 
 // Proxy auth requests to User Service
 app.use('/auth', async (req, res) => {
   console.log("Auth proxy hit:", req.method, req.path, "-> URL:", `${USER_SERVICE_URL}/auth${req.path}`);
   try {
     const fetch = require('node-fetch');
-    const url = `${USER_SERVICE_URL}/auth${req.path}`;
     
-    const response = await fetch(url, {
+    const response = await fetch(`${USER_SERVICE_URL}/auth${req.path}`, {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',
-        ...req.headers
+        'Authorization': req.headers.authorization || ''
       },
       body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
     });
     
-    const data = await response.text();
-    res.status(response.status);
+    const data = await response.json();
     
-    // Set content type if it's JSON
-    if (response.headers.get('content-type')?.includes('application/json')) {
-      res.setHeader('Content-Type', 'application/json');
+    if (!response.ok) {
+      return res.status(response.status).json(data);
     }
     
-    res.send(data);
+    res.json(data);
   } catch (error) {
     console.error('User Service proxy error:', error);
     res.status(500).json({ error: 'User Service unavailable' });
@@ -742,27 +146,23 @@ app.use('/auth', async (req, res) => {
 app.use('/users', async (req, res) => {
   try {
     const fetch = require('node-fetch');
-    const url = `${USER_SERVICE_URL}${req.path}`;
     
-    const response = await fetch(url, {
+    const response = await fetch(`${USER_SERVICE_URL}/users${req.path}`, {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': req.headers.authorization,
-        ...req.headers
+        'Authorization': req.headers.authorization || ''
       },
       body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
     });
     
-    const data = await response.text();
-    res.status(response.status);
+    const data = await response.json();
     
-    // Set content type if it's JSON
-    if (response.headers.get('content-type')?.includes('application/json')) {
-      res.setHeader('Content-Type', 'application/json');
+    if (!response.ok) {
+      return res.status(response.status).json(data);
     }
     
-    res.send(data);
+    res.json(data);
   } catch (error) {
     console.error('User Service proxy error:', error);
     res.status(500).json({ error: 'User Service unavailable' });
@@ -774,27 +174,32 @@ app.use('/api/cart', async (req, res) => {
   console.log("Cart proxy hit:", req.method, req.path, "-> URL:", `${CART_SERVICE_URL}/api/cart${req.path}`);
   try {
     const fetch = require('node-fetch');
-    const url = `${CART_SERVICE_URL}/api/cart${req.path}`;
     
-    const response = await fetch(url, {
+    const response = await fetch(`${CART_SERVICE_URL}/api/cart${req.path}`, {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': req.headers.authorization, // Forward auth token
-        ...req.headers
+        'Authorization': req.headers.authorization || ''
       },
-      body: req.method !== 'GET' && req.method !== 'DELETE' ? JSON.stringify(req.body) : undefined
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
     });
     
-    const data = await response.text();
-    res.status(response.status);
-    res.set(response.headers.raw());
-    res.send(data);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+    
+    res.json(data);
   } catch (error) {
     console.error('Cart Service proxy error:', error);
     res.status(500).json({ error: 'Cart Service unavailable' });
   }
 });
+
+// Admin routes (REAL authentication)
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -815,10 +220,10 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
-  console.log(`API Gateway running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Test endpoint: http://localhost:${PORT}/api/test`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 API Gateway running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔐 Admin endpoints: http://localhost:${PORT}/api/admin/*`);
 });
 
 module.exports = app;

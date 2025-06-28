@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Admin Login Test</h1>
+        <p>Test the admin login functionality with the new proxy configuration.</p>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="deepak@admin.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="deepak123" required>
+            </div>
+            
+            <button type="submit">Test Login</button>
+        </form>
+        
+        <div id="result"></div>
+        
+        <div class="info" style="margin-top: 30px;">
+            <h3>📋 Current Admin Credentials:</h3>
+            <p><strong>Email:</strong> deepak@admin.com</p>
+            <p><strong>Password:</strong> deepak123</p>
+            <p><strong>Role:</strong> super_admin</p>
+        </div>
+        
+        <div class="info" style="margin-top: 20px;">
+            <h3>🔗 Access Links:</h3>
+            <p><a href="http://localhost:3000/admin/login" target="_blank">Admin Login Page</a></p>
+            <p><a href="http://localhost:3000" target="_blank">Main Website</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<div class="info">Testing login...</div>';
+            
+            try {
+                const response = await fetch('/admin-api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Login Successful!</h3>
+                            <p><strong>Admin:</strong> ${data.data.admin.first_name} ${data.data.admin.last_name}</p>
+                            <p><strong>Role:</strong> ${data.data.admin.role}</p>
+                            <p><strong>Email:</strong> ${data.data.admin.email}</p>
+                            <p><strong>Token:</strong> ${data.data.access_token.substring(0, 50)}...</p>
+                            <p><strong>Permissions:</strong> ${data.data.admin.permissions.length} permissions</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Login Failed</h3>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error</h3>
+                        <p>Network error: ${error.message}</p>
+                        <p>Make sure the admin service is running and accessible.</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

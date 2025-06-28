@@ -7,7 +7,7 @@ const connectDB = require('./config/database');
 const cartRoutes = require('./routes/cartRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 8003;
+const PORT = process.env.PORT || 8000;
 
 // Connect to MongoDB
 connectDB();

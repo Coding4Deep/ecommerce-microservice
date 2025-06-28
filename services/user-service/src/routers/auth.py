@@ -57,14 +57,14 @@ async def create_access_token(data: dict, expires_delta: timedelta = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     
-    to_encode.update({"exp": expire, "type": "access"})
+    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
     return encoded_jwt
 
 async def create_refresh_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=7)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    to_encode.update({"exp": expire, "type": "refresh", "iat": datetime.utcnow()})
     
     encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET, algorithm="HS256")
     return encoded_jwt

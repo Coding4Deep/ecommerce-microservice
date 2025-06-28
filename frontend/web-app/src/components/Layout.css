@@ -1,0 +1,41 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.main-content.admin {
+  max-width: 1400px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  margin: 20px auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.main-content.full-width {
+  max-width: none;
+  padding: 0;
+}
+
+@media screen and (max-width: 768px) {
+  .main-content {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .main-content.admin {
+    margin: 10px;
+    border-radius: 15px;
+  }
+}

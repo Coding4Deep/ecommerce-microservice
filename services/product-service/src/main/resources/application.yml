@@ -43,7 +43,7 @@ management:
       show-details: always
   health:
     redis:
-      enabled: true
+      enabled: false
     mongo:
       enabled: true
 

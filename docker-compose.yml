@@ -99,6 +99,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=8080
+      - USER_SERVICE_URL=http://user-service:8000
+      - CART_SERVICE_URL=http://cart-service:8000
+      - PRODUCT_SERVICE_URL=http://product-service:8080
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
     depends_on:
@@ -118,6 +121,7 @@ services:
     environment:
       - MONGODB_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
       - REDIS_URL=redis://:redis123@redis:6379/0
+      - JWT_SECRET=your-jwt-secret-change-in-production-2024
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
     depends_on:
@@ -160,10 +164,12 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=8000
+      - JWT_SECRET=your-jwt-secret-change-in-production-2024
       - REDIS_URL=redis://:redis123@redis:6379/1
       - MONGODB_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
     depends_on:
       - mongodb
       - redis
@@ -283,8 +289,17 @@ services:
       - NODE_ENV=development
       - PORT=8000
       - MONGODB_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - JWT_SECRET=your-jwt-secret-change-in-production-2024
+      - ADMIN_REGISTRATION_TOKEN=admin-reg-token-deepak-2024-secure
+      - REDIS_URL=redis://:redis123@redis:6379/2
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
+      - ALLOWED_ORIGINS=http://localhost:3001,http://localhost:8080
+      - ADMIN_EMAIL=deepak@admin.com
+      - ADMIN_PASSWORD=deepak123
+      - ADMIN_USERNAME=deepak
+      - ADMIN_FIRST_NAME=Deepak
+      - ADMIN_LAST_NAME=Admin
     depends_on:
       - mongodb
       - vault
@@ -314,12 +329,10 @@ services:
     container_name: ecommerce-admin-frontend
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "3001:80"
     environment:
-      - REACT_APP_API_URL=http://localhost:8080
       - REACT_APP_ADMIN_API_URL=http://localhost:8009
     depends_on:
-      - api-gateway
       - admin-service
     networks:
       - ecommerce-network

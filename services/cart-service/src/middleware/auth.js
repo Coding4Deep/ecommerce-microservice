@@ -11,8 +11,9 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-change-in-production', (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-change-in-production-2024', (err, user) => {
     if (err) {
+      console.error('JWT verification error:', err.message);
       return res.status(403).json({ 
         success: false, 
         message: 'Invalid or expired token' 

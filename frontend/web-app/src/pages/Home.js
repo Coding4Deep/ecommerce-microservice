@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 function Home() {
@@ -8,6 +8,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -94,6 +95,32 @@ function Home() {
             <Link to="/services" className="btn btn-secondary">
               🔧 View Services
             </Link>
+            <button 
+              onClick={() => navigate('/admin')} 
+              className="btn btn-admin"
+              style={{
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '25px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                marginLeft: '10px'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+              }}
+            >
+              ⚙️ Admin Panel
+            </button>
           </div>
         </div>
       </section>
