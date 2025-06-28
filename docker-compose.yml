@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Infrastructure Services
+  # MongoDB Database
   mongodb:
     image: mongo:4.4
     container_name: ecommerce-mongodb
@@ -14,65 +14,24 @@ services:
       MONGO_INITDB_DATABASE: ecommerce
     volumes:
       - mongodb_data:/data/db
-      - ./data/seed/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./data/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - ecommerce-network
 
+  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: ecommerce-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass redis123
+    command: redis-server --requirepass redis123
     volumes:
       - redis_data:/data
     networks:
       - ecommerce-network
 
-  postgresql:
-    image: postgres:15-alpine
-    container_name: ecommerce-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: payments
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./data/seed/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - ecommerce-network
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: ecommerce-zookeeper
-    restart: unless-stopped
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - ecommerce-network
-
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: ecommerce-kafka
-    restart: unless-stopped
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
-    networks:
-      - ecommerce-network
-
+  # Vault for Secrets Management
   vault:
     image: hashicorp/vault:1.15
     container_name: ecommerce-vault
@@ -87,41 +46,17 @@ services:
     networks:
       - ecommerce-network
 
-  # Microservices
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    container_name: ecommerce-api-gateway
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      - NODE_ENV=development
-      - PORT=8080
-      - USER_SERVICE_URL=http://user-service:8000
-      - CART_SERVICE_URL=http://cart-service:8000
-      - PRODUCT_SERVICE_URL=http://product-service:8080
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=myroot
-    depends_on:
-      - vault
-      - redis
-    networks:
-      - ecommerce-network
-
+  # User Service
   user-service:
-    build:
-      context: ./services/user-service
-      dockerfile: Dockerfile
+    build: ./services/user-service
     container_name: ecommerce-user-service
     restart: unless-stopped
     ports:
       - "8001:8000"
     environment:
-      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - DATABASE_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
       - REDIS_URL=redis://:redis123@redis:6379/0
-      - JWT_SECRET=your-jwt-secret-change-in-production-2024
+      - JWT_SECRET=your-jwt-secret-change-in-production
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
     depends_on:
@@ -130,17 +65,26 @@ services:
       - vault
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Product Service
   product-service:
-    build:
-      context: ./services/product-service
-      dockerfile: Dockerfile
+    build: ./services/product-service
     container_name: ecommerce-product-service
     restart: unless-stopped
     ports:
       - "8002:8080"
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - SPRING_DATA_MONGODB_HOST=mongodb
+      - SPRING_DATA_MONGODB_PORT=27017
+      - SPRING_DATA_MONGODB_DATABASE=ecommerce
+      - SPRING_DATA_MONGODB_USERNAME=admin
+      - SPRING_DATA_MONGODB_PASSWORD=password123
+      - SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE=admin
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - SPRING_REDIS_PASSWORD=redis123
@@ -152,135 +96,132 @@ services:
       - vault
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/products/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Cart Service
   cart-service:
-    build:
-      context: ./services/cart-service
-      dockerfile: Dockerfile
+    build: ./services/cart-service
     container_name: ecommerce-cart-service
     restart: unless-stopped
     ports:
       - "8003:8000"
     environment:
-      - NODE_ENV=development
-      - PORT=8000
-      - JWT_SECRET=your-jwt-secret-change-in-production-2024
+      - DATABASE_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
       - REDIS_URL=redis://:redis123@redis:6379/1
-      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - JWT_SECRET=your-jwt-secret-change-in-production
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
-      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
     depends_on:
       - mongodb
       - redis
       - vault
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  order-service:
-    build:
-      context: ./services/order-service
-      dockerfile: Dockerfile
-    container_name: ecommerce-order-service
-    restart: unless-stopped
-    ports:
-      - "8004:8080"
-    environment:
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
-      - KAFKA_BROKERS=kafka:9092
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=myroot
-    depends_on:
-      - mongodb
-      - kafka
-      - vault
-    networks:
-      - ecommerce-network
-
-  payment-service:
-    build:
-      context: ./services/payment-service
-      dockerfile: Dockerfile
-    container_name: ecommerce-payment-service
-    restart: unless-stopped
-    ports:
-      - "8005:8000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres123@postgresql:5432/payments
-      - KAFKA_BROKERS=kafka:9092
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=myroot
-    depends_on:
-      - postgresql
-      - kafka
-      - vault
-    networks:
-      - ecommerce-network
-
-  inventory-service:
-    build:
-      context: ./services/inventory-service
-      dockerfile: Dockerfile
-    container_name: ecommerce-inventory-service
-    restart: unless-stopped
-    ports:
-      - "8006:8080"
-    environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - VAULT_URI=http://vault:8200
-      - VAULT_TOKEN=myroot
-    depends_on:
-      - mongodb
-      - kafka
-      - vault
-    networks:
-      - ecommerce-network
-
-  review-service:
-    build:
-      context: ./services/review-service
-      dockerfile: Dockerfile
-    container_name: ecommerce-review-service
-    restart: unless-stopped
-    ports:
-      - "8007:8000"
-    environment:
-      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
-      - KAFKA_BROKERS=kafka:9092
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=myroot
-    depends_on:
-      - mongodb
-      - kafka
-      - vault
-    networks:
-      - ecommerce-network
-
+  # Notification Service
   notification-service:
-    build:
-      context: ./services/notification-service
-      dockerfile: Dockerfile
+    build: ./services/notification-service
     container_name: ecommerce-notification-service
     restart: unless-stopped
     ports:
-      - "8008:8000"
+      - "8005:8005"
     environment:
       - NODE_ENV=development
-      - PORT=8000
-      - KAFKA_BROKERS=kafka:9092
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=myroot
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379/3
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=demo@example.com
+      - SMTP_PASS=demo_password
+      - FROM_EMAIL=noreply@ecommerce.com
     depends_on:
-      - kafka
-      - vault
+      - mongodb
+      - redis
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Review Service
+  review-service:
+    build: ./services/review-service
+    container_name: ecommerce-review-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - JWT_SECRET=your-jwt-secret-change-in-production
+    depends_on:
+      - mongodb
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Inventory Service
+  inventory-service:
+    build: ./services/inventory-service
+    container_name: ecommerce-inventory-service
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/ecommerce?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379/4
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: ecommerce-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service
+      - product-service
+      - cart-service
+      - notification-service
+      - review-service
+      - inventory-service
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Admin Service
   admin-service:
-    build:
-      context: ./services/admin-service
-      dockerfile: Dockerfile
+    build: ./services/admin-service
     container_name: ecommerce-admin-service
     restart: unless-stopped
     ports:
@@ -294,54 +235,55 @@ services:
       - REDIS_URL=redis://:redis123@redis:6379/2
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=myroot
-      - ALLOWED_ORIGINS=http://localhost:3001,http://localhost:8080
-      - ADMIN_EMAIL=deepak@admin.com
-      - ADMIN_PASSWORD=deepak123
-      - ADMIN_USERNAME=deepak
-      - ADMIN_FIRST_NAME=Deepak
-      - ADMIN_LAST_NAME=Admin
     depends_on:
       - mongodb
+      - redis
       - vault
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Frontend Services
+  # Web Frontend
   web-frontend:
-    build:
-      context: ./frontend/web-app
-      dockerfile: Dockerfile
+    build: ./frontend/web-app
     container_name: ecommerce-web-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_ADMIN_API_URL=http://localhost:8009
     depends_on:
       - api-gateway
+      - admin-service
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Admin Frontend
   admin-frontend:
-    build:
-      context: ./frontend/admin-panel
-      dockerfile: Dockerfile
+    build: ./frontend/admin-app
     container_name: ecommerce-admin-frontend
     restart: unless-stopped
     ports:
       - "3001:80"
-    environment:
-      - REACT_APP_ADMIN_API_URL=http://localhost:8009
     depends_on:
       - admin-service
     networks:
       - ecommerce-network
 
-volumes:
-  mongodb_data:
-  redis_data:
-  postgres_data:
-
 networks:
   ecommerce-network:
     driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:

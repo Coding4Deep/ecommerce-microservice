@@ -18,6 +18,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Services from './pages/Services';
 import UserDashboard from './pages/UserDashboard';
+import Reviews from './pages/Reviews';
+import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 
 // Admin Pages
@@ -91,6 +93,16 @@ function App() {
                 <Route path="/dashboard" element={
                   <Layout>
                     <UserDashboard />
+                  </Layout>
+                } />
+                <Route path="/reviews/:productId" element={
+                  <Layout>
+                    <Reviews />
+                  </Layout>
+                } />
+                <Route path="/notifications" element={
+                  <Layout>
+                    <Notifications />
                   </Layout>
                 } />
                 <Route path="/products" element={

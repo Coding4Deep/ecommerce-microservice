@@ -16,6 +16,7 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Clean up old cart data when user logs in
   const cleanupOldCartData = (currentUserId) => {
@@ -39,13 +40,24 @@ export function AuthProvider({ children }) {
     const savedToken = localStorage.getItem('ecommerce-token');
     
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        setIsAuthenticated(true);
+        console.log('User restored from localStorage:', userData.email);
+      } catch (error) {
+        console.error('Error parsing saved user data:', error);
+        localStorage.removeItem('ecommerce-user');
+        localStorage.removeItem('ecommerce-token');
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login for:', email);
+      
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -55,6 +67,7 @@ export function AuthProvider({ children }) {
       });
 
       const data = await response.json();
+      console.log('Login response:', data);
 
       if (response.ok && data.access_token) {
         const userData = {
@@ -65,10 +78,12 @@ export function AuthProvider({ children }) {
           role: data.user.role,
           phone: data.user.phone,
           isActive: data.user.is_active,
-          isVerified: data.user.is_verified
+          isVerified: data.user.is_verified,
+          fullName: `${data.user.first_name} ${data.user.last_name}`
         };
         
         setUser(userData);
+        setIsAuthenticated(true);
         localStorage.setItem('ecommerce-user', JSON.stringify(userData));
         localStorage.setItem('ecommerce-token', data.access_token);
         localStorage.setItem('ecommerce-refresh-token', data.refresh_token);
@@ -76,8 +91,10 @@ export function AuthProvider({ children }) {
         // Clean up any old cart data from other users or guest sessions
         cleanupOldCartData(userData.id);
         
-        return { success: true };
+        console.log('Login successful for:', userData.email);
+        return { success: true, user: userData };
       } else {
+        console.error('Login failed:', data);
         return { success: false, error: data.detail || 'Login failed' };
       }
     } catch (error) {
@@ -87,207 +104,82 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (userData) => {
-    console.log('Starting registration process...', { email: userData.email });
     try {
+      console.log('Attempting registration for:', userData.email);
+      
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: userData.email,
-          password: userData.password,
-          confirm_password: userData.confirmPassword,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          phone: userData.phone || null
-        }),
+        body: JSON.stringify(userData),
       });
 
       const data = await response.json();
-      console.log('Registration response:', { status: response.status, data });
+      console.log('Registration response:', data);
 
       if (response.ok && data.id) {
-        console.log('Registration successful!');
-        return { 
-          success: true, 
-          message: 'Account created successfully! Please log in with your credentials.',
-          redirectToLogin: true 
-        };
+        console.log('Registration successful for:', data.email);
+        return { success: true, user: data };
       } else {
-        console.log('Registration failed:', data);
-        
-        // Handle different error formats
-        let errorMessage = 'Registration failed';
-        
-        if (data.detail) {
-          if (typeof data.detail === 'string') {
-            // Simple string error (like "Email already registered")
-            errorMessage = data.detail;
-          } else if (Array.isArray(data.detail)) {
-            // Validation errors array
-            const errors = data.detail.map(err => err.msg).join(', ');
-            errorMessage = `Validation errors: ${errors}`;
-          }
-        } else if (data.message) {
-          errorMessage = data.message;
-        }
-        
-        return { success: false, error: errorMessage };
-      }
-    } catch (error) {
-      console.error('Registration network error:', error);
-      return { success: false, error: 'Network error. Please check your connection and try again.' };
-    }
-  };
-
-  const adminLogin = async (email, password) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.access_token && data.user.role === 'admin') {
-        const userData = {
-          id: data.user.id,
-          email: data.user.email,
-          firstName: data.user.first_name,
-          lastName: data.user.last_name,
-          role: data.user.role,
-          phone: data.user.phone,
-          isActive: data.user.is_active,
-          isVerified: data.user.is_verified
-        };
-        
-        setUser(userData);
-        localStorage.setItem('ecommerce-user', JSON.stringify(userData));
-        localStorage.setItem('ecommerce-token', data.access_token);
-        localStorage.setItem('ecommerce-refresh-token', data.refresh_token);
-        
-        return { success: true };
-      } else if (response.ok && data.user.role !== 'admin') {
-        return { success: false, error: 'Access denied. Admin privileges required.' };
-      } else {
-        return { success: false, error: data.detail || 'Login failed' };
-      }
-    } catch (error) {
-      console.error('Admin login error:', error);
-      return { success: false, error: 'Network error. Please try again.' };
-    }
-  };
-
-  const adminRegister = async (userData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userData.email,
-          password: userData.password,
-          confirm_password: userData.confirmPassword,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          phone: userData.phone || null
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.id) {
-        // Note: In a real app, you'd need a separate admin registration endpoint
-        // For now, we'll register as regular user and manually set role to admin
-        const newUser = {
-          id: data.id,
-          email: data.email,
-          firstName: data.first_name,
-          lastName: data.last_name,
-          role: 'admin', // This should be handled by backend
-          phone: data.phone,
-          isActive: data.is_active,
-          isVerified: data.is_verified
-        };
-        
-        setUser(newUser);
-        localStorage.setItem('ecommerce-user', JSON.stringify(newUser));
-        
-        return { success: true };
-      } else {
+        console.error('Registration failed:', data);
         return { success: false, error: data.detail || 'Registration failed' };
       }
     } catch (error) {
-      console.error('Admin registration error:', error);
+      console.error('Registration error:', error);
       return { success: false, error: 'Network error. Please try again.' };
     }
   };
 
   const logout = () => {
-    // Clear user state
+    console.log('Logging out user:', user?.email);
     setUser(null);
-    
-    // Clear authentication-related localStorage data
+    setIsAuthenticated(false);
     localStorage.removeItem('ecommerce-user');
     localStorage.removeItem('ecommerce-token');
     localStorage.removeItem('ecommerce-refresh-token');
     
-    // DON'T clear user-specific cart data - it should persist!
-    // Only clear guest cart data
-    localStorage.removeItem('ecommerce-cart-guest');
-    localStorage.removeItem('ecommerce-cart'); // Legacy cart key
-    
-    console.log('User logged out, cart data preserved');
+    // Clean up user-specific cart data
+    if (user?.id) {
+      localStorage.removeItem(`ecommerce-cart-${user.id}`);
+    }
   };
 
-  const updateProfile = async (userData) => {
-    try {
-      const token = localStorage.getItem('ecommerce-token');
-      
-      const response = await fetch(`${API_BASE_URL}/users/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          phone: userData.phone
-        }),
-      });
+  const updateUser = (updatedUserData) => {
+    const newUserData = { ...user, ...updatedUserData };
+    setUser(newUserData);
+    localStorage.setItem('ecommerce-user', JSON.stringify(newUserData));
+  };
 
-      if (response.ok) {
-        const updatedUser = { ...user, ...userData };
-        setUser(updatedUser);
-        localStorage.setItem('ecommerce-user', JSON.stringify(updatedUser));
-        return { success: true };
-      } else {
-        const data = await response.json();
-        return { success: false, error: data.detail || 'Update failed' };
-      }
+  const getAuthToken = () => {
+    return localStorage.getItem('ecommerce-token');
+  };
+
+  const isTokenValid = () => {
+    const token = getAuthToken();
+    if (!token) return false;
+    
+    try {
+      // Basic token validation (you might want to add JWT decode and expiry check)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp > currentTime;
     } catch (error) {
-      console.error('Profile update error:', error);
-      return { success: false, error: 'Network error. Please try again.' };
+      console.error('Token validation error:', error);
+      return false;
     }
   };
 
   const value = {
     user,
+    isAuthenticated,
     loading,
     login,
-    adminLogin,
-    adminRegister,
     register,
     logout,
-    updateProfile,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin'
+    updateUser,
+    getAuthToken,
+    isTokenValid
   };
 
   return (
